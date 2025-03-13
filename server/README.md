@@ -1,0 +1,48 @@
+# Backend
+
+# Project Structure
+
+project/
+│
+├── config/ # Configuration files
+│ ├── db.js # PostgreSQL connection setup
+│ ├── session.js # Session management configuration
+│ └── mqtt.js # MQTT client configuration and connection setup
+│
+├── controllers/ # Business logic for endpoints
+│ ├── authController.js # Handles login, signup, and logout
+│ ├── gatewayController.js # Handles gateway operations (fetch, add, edit, delete)
+│ └── mqttController.js # Handles MQTT message processing and data storage
+│
+├── middlewares/ # Middleware for handling requests
+│ ├── authMiddleware.js # Middleware to check session validity
+│ ├── validationMiddleware.js # Middleware for input validation
+│ └── subscriptionMiddleware.js # Verifies gateway subscription validity
+│
+├── models/ # Database models
+│ ├── User.js # User model for PostgreSQL
+│ ├── Gateway.js # Gateway model for PostgreSQL
+│ └── MqttData.js # Model for storing MQTT data in PostgreSQL
+│
+├── mqtt/ # MQTT-specific files
+│ ├── mqttHandler.js # Handles incoming MQTT messages
+│ └── topics.js # Defines MQTT topics to subscribe to
+│
+├── routes/ # Route definitions
+│ ├── authRoutes.js # Routes for authentication (login, signup, logout)
+│ ├── gatewayRoutes.js # Routes for gateway management (fetch, add, edit, delete)
+│ └── mqttRoutes.js # Routes for managing or monitoring MQTT topics
+│
+├── utils/ # Utility functions
+│ ├── hashUtils.js # For password hashing and validation
+│ ├── responseUtils.js # Standardized API responses
+│ └── mqttUtils.js # Utilities for MQTT message processing
+│
+├── validations/ # Validation logic for requests
+│ ├── authValidation.js # Validation for login and signup input
+│ └── gatewayValidation.js # Validation for gateway operations
+│
+├── .env # Environment variables (e.g., MQTT broker URL, database URL, session secret)
+├── package.json # Node.js dependencies and scripts
+├── server.js # Entry point of the application
+└── README.md # Project documentation
