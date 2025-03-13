@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Divider,
-  Grid,
   Paper,
   Stack,
   Stepper,
@@ -11,16 +10,25 @@ import {
   StepLabel,
   Typography,
   TextField,
+  StepConnector,
 } from "@mui/material";
+
+import Grid from "@mui/material/Grid2";
 import { useTheme } from "@mui/material/styles";
-import StepConnector from "@mui/material/StepConnector";
+
+// Icons
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AppRegistrationIcon from "@mui/icons-material/AppRegistration";
 import CircleOutlinedIcon from "@mui/icons-material/CircleOutlined";
 
+// component
+import PersonalDetails from "./PersonalDetails";
+import OrganizationDetails from "./OrganizationDetails";
+import SubscriptionDetails from "./SubscriptionDetails";
+
 const steps = [
   { label: "Step 1", description: "Personal Details" },
-  { label: "Step 2", description: "Company Details" },
+  { label: "Step 2", description: "Organization Details" },
   { label: "Step 3", description: "Subscription plan" },
   { label: "Step 4", description: "Payment details" },
 ];
@@ -40,7 +48,7 @@ const CustomStepConnector = () => {
         },
         "& .MuiStepConnector-line": {
           borderLeftWidth: 4,
-          minHeight: "40px", // Default height, will adjust dynamically
+          minHeight: "50px", // Default height, will adjust dynamically
         },
       }}
     />
@@ -85,6 +93,7 @@ const CustomStepIcon = (props) => {
 };
 
 export default function CompanyRegistrationStepper() {
+  const theme = useTheme();
   const [activeStep, setActiveStep] = React.useState(0);
 
   const handleNext = () => setActiveStep((prev) => prev + 1);
@@ -98,18 +107,18 @@ export default function CompanyRegistrationStepper() {
       sx={{
         flexGrow: 1,
         width: "100%",
-        p: 3,
+        p: 2,
         overflow: "auto",
       }}
     >
-      <Grid xs={12} md={12}>
-        <Typography variant="h6" sx={{ p: 2 }}>
+      <Grid size={12}>
+        <Typography variant="h6" sx={{ pb: 1 }}>
           Complete registration
         </Typography>
         <Divider />
       </Grid>
       {/* Left Side: Stepper */}
-      <Grid item xs={12} md={2}>
+      <Grid item size={2}>
         <Stack direction="column" sx={{ height: "100%" }}>
           <Stepper
             activeStep={activeStep}
@@ -149,10 +158,19 @@ export default function CompanyRegistrationStepper() {
         </Stack>
       </Grid>
       {/* Right Side: Form */}
-      <Grid item xs={12} md={10}>
+      <Grid item size={10}>
         <Paper
           elevation={0}
-          sx={{ p: 3, backgroundColor: "inherit", height: "100%" }}
+          sx={{
+            pb: 1,
+            pt: 2,
+            px: 2,
+            backgroundColor: "inherit",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+          }}
         >
           {activeStep === steps.length ? (
             <React.Fragment>
@@ -167,93 +185,9 @@ export default function CompanyRegistrationStepper() {
           ) : (
             <React.Fragment>
               <Box sx={{ mt: 1 }}>
-                {activeStep === 0 && (
-                  <Box
-                    component="form"
-                    noValidate
-                    autoComplete="off"
-                    sx={{ spacing: 2 }}
-                  >
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="first_name"
-                          label="First Name"
-                          variant="outlined"
-                          size="small"
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="last_name"
-                          label="Last Name"
-                          variant="outlined"
-                          size="small"
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="email"
-                          label="Email"
-                          variant="outlined"
-                          size="small"
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="phone"
-                          label="Phone Number"
-                          variant="outlined"
-                          size="small"
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="dob"
-                          label="Date of Birth"
-                          type="date"
-                          variant="outlined"
-                          size="small"
-                          InputLabelProps={{ shrink: true }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <TextField
-                          fullWidth
-                          id="gender"
-                          label="Gender"
-                          variant="outlined"
-                          size="small"
-                          select
-                          SelectProps={{ native: true }}
-                        >
-                          <option value="male">Male</option>
-                          <option value="female">Female</option>
-                          <option value="other">Other</option>
-                        </TextField>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
-                {activeStep === 1 && (
-                  <Box>
-                    <Typography variant="h6">Company Details</Typography>
-                    <TextField fullWidth label="Company Name" margin="normal" />
-                    <TextField fullWidth label="Address" margin="normal" />
-                  </Box>
-                )}
-                {activeStep === 2 && (
-                  <Box>
-                    <Typography variant="h6">Subscription Plan</Typography>
-                    <TextField fullWidth label="Plan" margin="normal" />
-                    <TextField fullWidth label="Duration" margin="normal" />
-                  </Box>
-                )}
+                {activeStep === 0 && <PersonalDetails />}
+                {activeStep === 1 && <OrganizationDetails />}
+                {activeStep === 2 && <SubscriptionDetails />}
                 {activeStep === 3 && (
                   <Box>
                     <Typography variant="h6">Payment Details</Typography>

@@ -6,6 +6,7 @@ const theme = createTheme({
       light: "#33b9b9",
       main: "#00a8a8",
       dark: "#007575",
+      100: "#c1eff4",
       contrastText: "#fff",
     },
     secondary: {
@@ -26,7 +27,25 @@ const theme = createTheme({
       dark: "#c62828",
       contrastText: "#fff",
     },
+    text: {
+      secondary: "#a6a1b7",
+    },
+    amber: {
+      300: "#ffd54f",
+    },
+    blue: {
+      300: "#64b5f6",
+    },
+    indigo: {
+      300: "#7986cb",
+    },
+    purple: {
+      300: "#ba68c8",
+    },
+    lightGreen: {
+      300: "#aed581",
+    },
   },
 });
 
-export default theme; // Export as default
+export default theme;

@@ -1,34 +1,64 @@
 import * as React from "react";
 import { styled, useTheme } from "@mui/material/styles";
-import Box from "@mui/material/Box";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
 import TableCell, { tableCellClasses } from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Paper from "@mui/material/Paper";
-import IconButton from "@mui/material/IconButton";
-import Tooltip from "@mui/material/Tooltip";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+} from "@mui/material";
 
-function createData(id, name, calories, fat, carbs, protein) {
+function createData(id, name, time, v1, v2, v3, l1, l2, l3, qa, fq, kt) {
   return {
     id,
     name,
-    calories,
-    fat,
-    carbs,
-    protein,
+    time,
+    v1,
+    v2,
+    v3,
+    l1,
+    l2,
+    l3,
+    qa,
+    fq,
+    kt,
   };
 }
 
 const rows = [
-  createData(1, "LT Pannel", 305, 3.7, 67, 4.3),
-  createData(2, "Main Pannel", 452, 25.0, 51, 4.9),
+  createData(
+    1,
+    "LT Pannel",
+    "06-03-2025 15:37:12",
+    405,
+    408,
+    412,
+    3.7,
+    5,
+    2.1,
+    0.9,
+    50,
+    867
+  ),
+  createData(
+    2,
+    "Main Pannel",
+    "06-03-2025 15:37:12",
+    442,
+    440,
+    398,
+    3.7,
+    5,
+    2.1,
+    0.8,
+    49.52,
+    1200
+  ),
 ];
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -59,28 +89,64 @@ const headCells = [
     label: "Meters",
   },
   {
-    id: "calories",
+    id: "time",
     numeric: true,
-    disablePadding: false,
-    label: "Volages (V)",
+    disablePadding: true,
+    label: "Last Update",
   },
   {
-    id: "fat",
+    id: "v1",
     numeric: true,
     disablePadding: false,
-    label: "Current (A)",
+    label: "Voltage (V1)",
   },
   {
-    id: "carbs",
+    id: "v2",
     numeric: true,
     disablePadding: false,
-    label: "PF ",
+    label: "Voltage (V2)",
   },
   {
-    id: "protein",
+    id: "v3",
     numeric: true,
     disablePadding: false,
-    label: "Power (KWh)",
+    label: "Voltage (V3)",
+  },
+  {
+    id: "l1",
+    numeric: true,
+    disablePadding: false,
+    label: "Current (L1)",
+  },
+  {
+    id: "l2",
+    numeric: true,
+    disablePadding: false,
+    label: "Current (L2)",
+  },
+  {
+    id: "l3",
+    numeric: true,
+    disablePadding: false,
+    label: "Current (L3)",
+  },
+  {
+    id: "qa",
+    numeric: true,
+    disablePadding: false,
+    label: "Power Factor Avg.",
+  },
+  {
+    id: "fq",
+    numeric: true,
+    disablePadding: false,
+    label: "Frequency",
+  },
+  {
+    id: "kt",
+    numeric: true,
+    disablePadding: false,
+    label: "Total Active Power (KW)",
   },
 ];
 
@@ -91,7 +157,7 @@ function EnhancedTableHead() {
         {headCells.map((headCell) => (
           <StyledTableCell
             key={headCell.id}
-            align={headCell.numeric ? "right" : "left"}
+            align={headCell.numeric ? "center" : "left"}
             sortDirection={false}
           >
             {headCell.label}
@@ -99,34 +165,6 @@ function EnhancedTableHead() {
         ))}
       </TableRow>
     </TableHead>
-  );
-}
-
-function EnhancedTableToolbar() {
-  return (
-    <Toolbar
-      sx={[
-        {
-          pl: { sm: 2 },
-          pr: { xs: 1, sm: 1 },
-        },
-      ]}
-    >
-      <Typography
-        sx={{ flex: "1 1 100%" }}
-        variant="h6"
-        id="tableTitle"
-        component="div"
-      >
-        Single Phase Meters
-      </Typography>
-
-      <Tooltip title="Filter list">
-        <IconButton>
-          <FilterListIcon />
-        </IconButton>
-      </Tooltip>
-    </Toolbar>
   );
 }
 
@@ -167,14 +205,16 @@ export default function EnhancedTable() {
                     <StyledTableCell component="th" id={labelId} scope="row">
                       {row.name}
                     </StyledTableCell>
-                    <StyledTableCell align="right">
-                      {row.calories}
-                    </StyledTableCell>
-                    <StyledTableCell align="right">{row.fat}</StyledTableCell>
-                    <StyledTableCell align="right">{row.carbs}</StyledTableCell>
-                    <StyledTableCell align="right">
-                      {row.protein}
-                    </StyledTableCell>
+                    <StyledTableCell align="center">{row.time}</StyledTableCell>
+                    <StyledTableCell align="center">{row.v1}</StyledTableCell>
+                    <StyledTableCell align="center">{row.v2}</StyledTableCell>
+                    <StyledTableCell align="center">{row.v3}</StyledTableCell>
+                    <StyledTableCell align="center">{row.l1}</StyledTableCell>
+                    <StyledTableCell align="center">{row.l2}</StyledTableCell>
+                    <StyledTableCell align="center">{row.l3}</StyledTableCell>
+                    <StyledTableCell align="center">{row.qa}</StyledTableCell>
+                    <StyledTableCell align="center">{row.fq}</StyledTableCell>
+                    <StyledTableCell align="center">{row.kt}</StyledTableCell>
                   </StyledTableRow>
                 );
               })}

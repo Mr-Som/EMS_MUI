@@ -23,6 +23,7 @@ import {
   Logout as LogoutIcon,
   ElectricMeter as ElectricMeterIcon,
   SsidChart as SsidChartIcon,
+  InsertChartRounded as InsertChartRoundedIcon,
   Person as PersonIcon,
   Analytics as AnalyticsIcon,
   Summarize as SummarizeIcon,
@@ -36,7 +37,6 @@ import {
   ExpandLess as ExpandLessIcon,
   DeveloperMode as DeveloperModeIcon,
 } from "@mui/icons-material";
-
 //
 import logo from "../assets/logo.png";
 
@@ -73,7 +73,7 @@ const NavigationList1 = [
   {
     segment: "graphicalView",
     title: "Graphical View",
-    icon: <SsidChartIcon />,
+    icon: <InsertChartRoundedIcon />,
   },
   {
     segment: "energyAnalysis",
