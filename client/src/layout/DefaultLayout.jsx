@@ -15,7 +15,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   justifyContent: "flex-end",
 }));
 
-export default function DefaultLayout() {
+function DefaultLayout({ setIsAuthenticated }) {
   const [open, setOpen] = React.useState(false);
 
   const handleDrawerToggle = () => {
@@ -26,7 +26,11 @@ export default function DefaultLayout() {
     <Box sx={{ display: "flex", bgcolor: "#fafbff" }}>
       <CssBaseline />
       <NavBar open={open} handleDrawerToggle={handleDrawerToggle} />
-      <SideNav open={open} handleDrawerToggle={handleDrawerToggle} />
+      <SideNav
+        open={open}
+        handleDrawerToggle={handleDrawerToggle}
+        setIsAuthenticated={setIsAuthenticated}
+      />
       <Box
         component="main"
         sx={{ flexGrow: 1, pt: 1, pb: 0, px: 1, minHeight: "100vh" }}
@@ -37,3 +41,5 @@ export default function DefaultLayout() {
     </Box>
   );
 }
+
+export default DefaultLayout;

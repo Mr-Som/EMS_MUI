@@ -1,10 +1,11 @@
 const { sendError } = require("../utils/responseUtils");
 
-const validateInput = (validationFunction) => {
+const validateInput = (schema) => {
   return (req, res, next) => {
-    const { error } = validationFunction(req.body);
+    const { error } = schema(req.body);
     if (error) {
-      return sendError(res, 400, error.details[0].message);
+      const errorMessage = error.details[0].message;
+      return sendError(res, 400, errorMessage);
     }
     next();
   };

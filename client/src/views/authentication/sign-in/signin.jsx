@@ -1,10 +1,9 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useState } from "react";
 import {
   Box,
   Typography,
   Link,
   FormControl,
-  FormGroup,
   InputAdornment,
   IconButton,
   TextField,
@@ -12,17 +11,18 @@ import {
   Paper,
   Stack,
   styled,
-  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-
-import { useNavigate, BrowserRouter, Route, Routes } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import "./signin.css";
-
 import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
@@ -32,45 +32,19 @@ import {
 
 const SignUp = React.lazy(() => import("../sign-up/signup"));
 
-// Generate random CAPTCHA text
 const generateCaptcha = () => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789_";
+  const chars = "ABCDEFGHJKLMNPOQRSTUVWXYZ0123456789";
   let captcha = "";
   for (let i = 0; i < 5; i++) {
     captcha += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return captcha;
 };
-const providers = [{ id: "credentials", name: "username and password" }];
-
-const signIn = async (provider, formData) => {
-  const promise = new Promise((resolve) => {
-    setTimeout(() => {
-      const username = formData?.get("username");
-      const password = formData?.get("password");
-      alert(
-        `Signing in with "${provider.name}" and credentials: ${username}, ${password}`
-      );
-      resolve({
-        type: "CredentialsSignin",
-        error: "Invalid credentials.",
-      });
-    }, 300);
-  });
-  return promise;
-};
 
 const OutlinedInputCustom = styled(TextField)({
-  "& .MuiInputLabel-root": {
-    color: "#6F7E8C",
-    fontSize: "14px",
-  },
-  "& label.Mui-focused": {
-    color: "#6F7E8C",
-  },
-  "& .MuiInput-underline:after": {
-    borderBottomColor: "#B2BAC2",
-  },
+  "& .MuiInputLabel-root": { color: "#6F7E8C", fontSize: "14px" },
+  "& label.Mui-focused": { color: "#6F7E8C" },
+  "& .MuiInput-underline:after": { borderBottomColor: "#B2BAC2" },
   "& .MuiOutlinedInput-root": {
     "& fieldset": {
       borderColor: "hsla(0, 0.00%, 18.00%, 0.49)",
@@ -84,31 +58,55 @@ const OutlinedInputCustom = styled(TextField)({
       borderColor: "#6F7E8C",
       background: "rgba(0, 0, 0, .2)",
     },
-    "& input": {
-      color: "hsla(0, 0%, 100%, .9)",
-    },
+    "& input": { color: "hsla(0, 0%, 100%, .9)" },
   },
 });
 
-const LoginPage = () => {
+const LoginPage = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = React.useState(false);
-  const handleMouseDownPassword = (event) => {
-    event.preventDefault();
-  };
-  const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const [captchaText, setCaptchaText] = React.useState(generateCaptcha());
-  const [userCaptcha, setUserCaptcha] = React.useState("");
-  const [captchaError, setCaptchaError] = React.useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [captchaText, setCaptchaText] = useState(generateCaptcha());
+  const [userCaptcha, setUserCaptcha] = useState("");
+  const [captchaError, setCaptchaError] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [successOpen, setSuccessOpen] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleMouseDownPassword = (event) => event.preventDefault();
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Form submitted");
+
     if (userCaptcha.toUpperCase() !== captchaText) {
       setCaptchaError(true);
+      console.log("CAPTCHA validation failed");
       return;
     }
+
     const formData = new FormData(e.target);
-    signIn(providers[0], formData);
+    const username = formData.get("username");
+    const password = formData.get("password");
+    console.log("Credentials:", { username, password });
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/auth/login`,
+        { username, password },
+        { withCredentials: true }
+      );
+      console.log("Login response:", response.data);
+      if (response.data.success) {
+        setIsAuthenticated(true); // Update authentication state
+        setSuccessOpen(true);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setLoginError(
+        error.response?.data?.message ||
+          "Invalid credentials. Please try again."
+      );
+    }
   };
 
   const refreshCaptcha = () => {
@@ -117,11 +115,16 @@ const LoginPage = () => {
     setCaptchaError(false);
   };
 
+  const handleSuccessClose = () => {
+    setSuccessOpen(false);
+    navigate("/"); // Navigate after confirmation
+  };
+
   return (
     <Box className="login-container">
-      <FormGroup
+      <form
         onSubmit={handleSubmit}
-        sx={{ transform: "translateX(-160px)", width: "360px" }}
+        style={{ transform: "translateX(-160px)", width: "360px" }}
       >
         <Paper elevation={0} sx={{ backgroundColor: "transparent" }}>
           <Stack
@@ -190,16 +193,8 @@ const LoginPage = () => {
                 }}
               />
             </FormControl>
-            {/* CAPTCHA Section */}
             <Box sx={{ mt: 2, mb: 1, width: "100%" }}>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                }}
-              >
-                {/* CAPTCHA Input Field (60%) */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ flex: "0 0 60%" }}>
                   <OutlinedInputCustom
                     fullWidth
@@ -218,13 +213,10 @@ const LoginPage = () => {
                         color: "#fff",
                         textTransform: "uppercase",
                       },
-                      "& .MuiFormLabel-root": {
-                        color: "#6F7E8C",
-                      },
+                      "& .MuiFormLabel-root": { color: "#6F7E8C" },
                     }}
                   />
                 </Box>
-                {/* CAPTCHA Image (36%) */}
                 <Box
                   sx={{
                     flex: "0 0 36%",
@@ -237,13 +229,7 @@ const LoginPage = () => {
                     position: "relative",
                   }}
                 >
-                  {/* CAPTCHA Text with Strikethrough */}
-                  <Box
-                    sx={{
-                      position: "relative",
-                      display: "inline-block",
-                    }}
-                  >
+                  <Box sx={{ position: "relative", display: "inline-block" }}>
                     <Typography
                       variant="body2"
                       sx={{
@@ -253,7 +239,7 @@ const LoginPage = () => {
                         color: "#fff",
                         userSelect: "none",
                         position: "relative",
-                        zIndex: 1, // Ensure text is above the line
+                        zIndex: 1,
                       }}
                     >
                       {captchaText.split("").map((char, index) => (
@@ -269,7 +255,6 @@ const LoginPage = () => {
                         </span>
                       ))}
                     </Typography>
-                    {/* Strikethrough Line */}
                     <Box
                       sx={{
                         position: "absolute",
@@ -277,13 +262,12 @@ const LoginPage = () => {
                         left: 0,
                         right: 0,
                         height: "2px",
-                        backgroundColor: "#ffffff", // Red line
+                        backgroundColor: "#ffffff",
                         transform: "translateY(-50%)",
-                        zIndex: 0, // Ensure line is below the text
+                        zIndex: 0,
                       }}
                     />
                   </Box>
-                  {/* Reload Icon */}
                   <IconButton
                     onClick={refreshCaptcha}
                     sx={{
@@ -299,13 +283,19 @@ const LoginPage = () => {
                 </Box>
               </Box>
             </Box>
+            {loginError && (
+              <Typography
+                variant="caption"
+                color="error"
+                sx={{ alignSelf: "flex-start" }}
+              >
+                {loginError}
+              </Typography>
+            )}
             <Typography
               variant="caption"
               gutterBottom
-              sx={{
-                color: "#9e9e9e",
-                alignSelf: "flex-start",
-              }}
+              sx={{ color: "#9e9e9e", alignSelf: "flex-start" }}
             >
               Forgot your password?{" "}
               <Link href="#" underline="none" sx={{ color: "primary.light" }}>
@@ -318,9 +308,7 @@ const LoginPage = () => {
               fullWidth
               sx={{
                 backgroundColor: "#e74f30",
-                "&:hover": {
-                  backgroundColor: "#d84315",
-                },
+                "&:hover": { backgroundColor: "#d84315" },
               }}
             >
               LOG IN
@@ -339,16 +327,31 @@ const LoginPage = () => {
               onClick={() => navigate("/signup")}
               sx={{
                 backgroundColor: "#1976d2",
-                "&:hover": {
-                  backgroundColor: "#1565c0",
-                },
+                "&:hover": { backgroundColor: "#1565c0" },
               }}
             >
               CREATE ACCOUNT
             </Button>
           </Stack>
         </Paper>
-      </FormGroup>
+      </form>
+
+      {/* Success Dialog */}
+      <Dialog open={successOpen} onClose={handleSuccessClose}>
+        <DialogTitle>Success</DialogTitle>
+        <DialogContent>
+          <Typography>Login successful! Welcome back.</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleSuccessClose}
+            color="primary"
+            variant="contained"
+          >
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

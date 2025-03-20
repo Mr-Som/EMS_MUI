@@ -14,15 +14,15 @@ import {
   Collapse,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
-// ICON
+// ICONS
 import {
   MenuOpen as MenuOpenIcon,
   Dashboard as DashboardIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   ElectricMeter as ElectricMeterIcon,
-  SsidChart as SsidChartIcon,
   InsertChartRounded as InsertChartRoundedIcon,
   Person as PersonIcon,
   Analytics as AnalyticsIcon,
@@ -37,7 +37,6 @@ import {
   ExpandLess as ExpandLessIcon,
   DeveloperMode as DeveloperModeIcon,
 } from "@mui/icons-material";
-//
 import logo from "../assets/logo.png";
 
 const drawerWidth = 240;
@@ -127,10 +126,7 @@ const NavigationList3 = [
     segment: "account",
     title: "Account",
     icon: <PersonIcon />,
-    children: [
-      { segment: "profile", title: "Profile" },
-      { segment: "logout", title: "Log Out" },
-    ],
+    children: [{ segment: "profile", title: "Profile" }],
   },
   {
     segment: "settings",
@@ -142,10 +138,9 @@ const NavigationList3 = [
       { segment: "security", title: "Security" },
     ],
   },
-  { segment: "signin", title: "Log Out", icon: <LogoutIcon /> },
+  { segment: "logout", title: "Log Out", icon: <LogoutIcon /> },
 ];
 
-// Drawer Component
 const Drawer = styled(MuiDrawer, {
   shouldForwardProp: (prop) => prop !== "open",
 })(({ theme, open }) => ({
@@ -171,29 +166,42 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   justifyContent: "flex-end",
 }));
 
-function SideNav({ open, handleDrawerToggle }) {
+function SideNav({ open, handleDrawerToggle, setIsAuthenticated }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [expanded, setExpanded] = useState(null);
 
-  // Close child items when drawer is minimized
   useEffect(() => {
     if (!open) {
       setExpanded(null);
     }
   }, [open]);
 
-  const isActive = (segment) => {
-    return location.pathname.startsWith(`/${segment}`);
-  };
+  const isActive = (segment) => location.pathname.startsWith(`/${segment}`);
+  const hasActiveChild = (children) =>
+    children?.some((child) => isActive(child.segment));
 
-  const hasActiveChild = (children) => {
-    return children?.some((child) => isActive(child.segment));
+  const handleLogout = async () => {
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/auth/logout`,
+        {},
+        { withCredentials: true }
+      );
+      setIsAuthenticated(false);
+      navigate("/signin");
+    } catch (error) {
+      //console.error("Logout error:", error);
+      setIsAuthenticated(false);
+      navigate("/signin");
+    }
   };
 
   const handleClick = (segment, children) => {
-    if (children) {
+    if (segment === "logout") {
+      handleLogout();
+    } else if (children) {
       setExpanded(expanded === segment ? null : segment);
     } else {
       navigate(`/${segment}`);
@@ -207,11 +215,9 @@ function SideNav({ open, handleDrawerToggle }) {
       open={open}
       sx={{
         "& .MuiDrawer-paper": {
-          scrollbarWidth: "none", // Firefox
-          msOverflowStyle: "none", // IE and Edge
-          "&::-webkit-scrollbar": {
-            display: "none", // Chrome, Safari, and Opera
-          },
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          "&::-webkit-scrollbar": { display: "none" },
         },
       }}
     >
@@ -235,7 +241,7 @@ function SideNav({ open, handleDrawerToggle }) {
           <img src={logo} alt="" style={{ width: 100, height: 50 }} />
         </Stack>
         <IconButton onClick={handleDrawerToggle}>
-          {theme.direction === "rtl" ? <MenuOpenIcon /> : <MenuOpenIcon />}
+          <MenuOpenIcon />
         </IconButton>
       </DrawerHeader>
       <Box
@@ -249,9 +255,7 @@ function SideNav({ open, handleDrawerToggle }) {
           overflowY: "auto",
           scrollbarWidth: 0,
           msOverflowStyle: "none",
-          "&::-webkit-scrollbar": {
-            display: "none",
-          },
+          "&::-webkit-scrollbar": { display: "none" },
         }}
       >
         <Divider />
@@ -259,7 +263,7 @@ function SideNav({ open, handleDrawerToggle }) {
           {NavigationList1.map(({ segment, title, icon, children }) => (
             <React.Fragment key={segment}>
               <ListItem
-                button
+                button="true"
                 onClick={() => handleClick(segment, children)}
                 sx={{
                   backgroundColor:
@@ -295,9 +299,7 @@ function SideNav({ open, handleDrawerToggle }) {
                     minWidth: "40px",
                   }}
                 >
-                  {React.cloneElement(icon, {
-                    sx: { fontSize: "1.25rem" },
-                  })}
+                  {React.cloneElement(icon, { sx: { fontSize: "1.25rem" } })}
                 </ListItemIcon>
                 <ListItemText primary={title} />
                 {children &&
@@ -309,22 +311,22 @@ function SideNav({ open, handleDrawerToggle }) {
               </ListItem>
               {children && (
                 <Collapse
-                  in={expanded === segment && open} // Only show if drawer is open
+                  in={expanded === segment && open}
                   timeout="auto"
                   unmountOnExit
                 >
                   <List component="div" disablePadding>
                     {children.map((child) => (
                       <ListItem
-                        button
+                        button="true"
                         key={child.segment}
                         onClick={() => navigate(`/${child.segment}`)}
                         sx={{
                           pl: 4,
                           backgroundColor: isActive(child.segment)
-                            ? theme.palette.primary.dark // Change to dark when active
+                            ? theme.palette.primary.dark
                             : expanded === segment
-                              ? theme.palette.primary.light // Keep light when parent expanded
+                              ? theme.palette.primary.light
                               : "inherit",
                           color:
                             isActive(child.segment) || expanded === segment
@@ -352,7 +354,7 @@ function SideNav({ open, handleDrawerToggle }) {
           {NavigationList2.map(({ segment, title, icon, children }) => (
             <React.Fragment key={segment}>
               <ListItem
-                button
+                button="true"
                 onClick={() => handleClick(segment, children)}
                 sx={{
                   backgroundColor:
@@ -388,9 +390,7 @@ function SideNav({ open, handleDrawerToggle }) {
                     minWidth: "40px",
                   }}
                 >
-                  {React.cloneElement(icon, {
-                    sx: { fontSize: "1.25rem" },
-                  })}
+                  {React.cloneElement(icon, { sx: { fontSize: "1.25rem" } })}
                 </ListItemIcon>
                 <ListItemText primary={title} />
                 {children &&
@@ -402,22 +402,22 @@ function SideNav({ open, handleDrawerToggle }) {
               </ListItem>
               {children && (
                 <Collapse
-                  in={expanded === segment && open} // Only show if drawer is open
+                  in={expanded === segment && open}
                   timeout="auto"
                   unmountOnExit
                 >
                   <List component="div" disablePadding>
                     {children.map((child) => (
                       <ListItem
-                        button
+                        button="true"
                         key={child.segment}
                         onClick={() => navigate(`/${child.segment}`)}
                         sx={{
                           pl: 4,
                           backgroundColor: isActive(child.segment)
-                            ? theme.palette.primary.dark // Change to dark when active
+                            ? theme.palette.primary.dark
                             : expanded === segment
-                              ? theme.palette.primary.light // Keep light when parent expanded
+                              ? theme.palette.primary.light
                               : "inherit",
                           color:
                             isActive(child.segment) || expanded === segment
@@ -446,7 +446,7 @@ function SideNav({ open, handleDrawerToggle }) {
           {NavigationList3.map(({ segment, title, icon, children }) => (
             <React.Fragment key={segment}>
               <ListItem
-                button
+                button="true"
                 onClick={() => handleClick(segment, children)}
                 sx={{
                   backgroundColor:
@@ -482,9 +482,7 @@ function SideNav({ open, handleDrawerToggle }) {
                     minWidth: "40px",
                   }}
                 >
-                  {React.cloneElement(icon, {
-                    sx: { fontSize: "1.25rem" },
-                  })}
+                  {React.cloneElement(icon, { sx: { fontSize: "1.25rem" } })}
                 </ListItemIcon>
                 <ListItemText primary={title} />
                 {children &&
@@ -496,22 +494,22 @@ function SideNav({ open, handleDrawerToggle }) {
               </ListItem>
               {children && (
                 <Collapse
-                  in={expanded === segment && open} // Only show if drawer is open
+                  in={expanded === segment && open}
                   timeout="auto"
                   unmountOnExit
                 >
                   <List component="div" disablePadding>
                     {children.map((child) => (
                       <ListItem
-                        button
+                        button="true"
                         key={child.segment}
-                        onClick={() => navigate(`/${child.segment}`)}
+                        onClick={() => handleClick(child.segment)}
                         sx={{
                           pl: 4,
                           backgroundColor: isActive(child.segment)
-                            ? theme.palette.primary.dark // Change to dark when active
+                            ? theme.palette.primary.dark
                             : expanded === segment
-                              ? theme.palette.primary.light // Keep light when parent expanded
+                              ? theme.palette.primary.light
                               : "inherit",
                           color:
                             isActive(child.segment) || expanded === segment
