@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { useTheme } from "@mui/material/styles";
+import axios from "axios";
 
 // Icons
 import {
@@ -31,30 +32,27 @@ import {
 export default function UserManagement() {
   const theme = useTheme();
   const [selected, setSelected] = React.useState([]);
-  const [menuAnchorEl, setMenuAnchorEl] = React.useState({}); // Track menu state for each row
-  const [openDialog, setOpenDialog] = React.useState(false); // For edit dialog (not implemented fully here)
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState({});
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
 
-  // Sample user data
-  const users = [
-    {
-      fullName: "John Doe",
-      email: "johndoe@example.com",
-      role: "Admin",
-      lastLogin: "2025-03-05",
-      department: "Engineering",
-      phoneNumber: "+1 123-456-7890",
-      status: "Active",
-    },
-    {
-      fullName: "Jane Doe",
-      email: "janedoe@example.com",
-      role: "User",
-      lastLogin: "2025-03-04",
-      department: "Marketing",
-      phoneNumber: "+1 987-654-3210",
-      status: "Inactive",
-    },
-  ];
+  // Fetch users from backend
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_SERVER_API_URL}/api/users`,
+          { withCredentials: true }
+        );
+        setUsers(response.data.data); // Assuming sendSuccess returns { success: true, data: users, message: "..." }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Checkbox handlers
   const handleSelectAllClick = (event) => {
@@ -89,21 +87,17 @@ export default function UserManagement() {
   };
 
   const handleDeleteSelected = () => {
-    // Delete selected users
     const updatedUsers = users.filter((user) => !selected.includes(user.email));
-    console.log("Deleted users:", selected);
-    setSelected([]); // Clear selection
+    setUsers(updatedUsers);
+    setSelected([]);
+    // TODO: Add API call to delete users on backend
   };
 
   const isSelected = (email) => selected.indexOf(email) !== -1;
 
   // Get initials for avatar
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const getInitials = (firstName, lastName) => {
+    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
   };
 
   // Predefined light colors for avatars
@@ -269,130 +263,157 @@ export default function UserManagement() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {users.map((user, index) => {
-                  const isItemSelected = isSelected(user.email);
-                  const isMenuOpen = Boolean(menuAnchorEl[user.email]);
-                  const avatarColor = avatarColors[index % avatarColors.length];
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Typography>Loading...</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Typography>No users found.</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user, index) => {
+                    const isItemSelected = isSelected(user.email);
+                    const isMenuOpen = Boolean(menuAnchorEl[user.email]);
+                    const avatarColor =
+                      avatarColors[index % avatarColors.length];
+                    const fullName = `${user.first_name || ""} ${
+                      user.last_name || ""
+                    }`.trim();
 
-                  return (
-                    <TableRow
-                      hover
-                      key={user.email}
-                      selected={isItemSelected}
-                      sx={{
-                        "&:hover": { backgroundColor: theme.palette.grey[50] },
-                      }}
-                    >
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          color="primary"
-                          checked={isItemSelected}
-                          onClick={() => handleClick(user.email)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Avatar
-                            sx={{
-                              bgcolor: avatarColor,
-                              width: 36,
-                              height: 36,
-                              fontSize: "14px",
-                            }}
+                    return (
+                      <TableRow
+                        hover
+                        key={user.user_id}
+                        selected={isItemSelected}
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: theme.palette.grey[50],
+                          },
+                        }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            color="primary"
+                            checked={isItemSelected}
+                            onClick={() => handleClick(user.email)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={2}
                           >
-                            {getInitials(user.fullName)}
-                          </Avatar>
-                          <Typography variant="body2">
-                            {user.fullName}
+                            <Avatar
+                              sx={{
+                                bgcolor: avatarColor,
+                                width: 36,
+                                height: 36,
+                                fontSize: "14px",
+                              }}
+                            >
+                              {getInitials(user.first_name, user.last_name)}
+                            </Avatar>
+                            <Typography variant="body2">
+                              {fullName || "N/A"}
+                            </Typography>
+                          </Stack>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {user.email || "N/A"}
                           </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {user.email}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">{user.role}</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {user.department}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {user.phoneNumber}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color:
-                              user.status === "Active"
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {user.role || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {user.department || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {user.phone || "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: user.status
                                 ? theme.palette.success.main
                                 : theme.palette.error.main,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {user.status}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2" color="text.secondary">
-                          {user.lastLogin}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="outlined"
-                          endIcon={<KeyboardArrowDownIcon />}
-                          aria-label="more"
-                          sx={{
-                            borderRadius: "8px",
-                            textTransform: "none",
-                            px: 2,
-                            ...(isMenuOpen && {
-                              backgroundColor: theme.palette.primary[100],
-                              borderColor: theme.palette.primary.main,
-                            }),
-                          }}
-                          onClick={(event) =>
-                            handleMenuClick(event, user.email)
-                          }
-                        >
-                          Actions
-                        </Button>
-                        <Menu
-                          anchorEl={menuAnchorEl[user.email]}
-                          open={isMenuOpen}
-                          onClose={() => handleMenuClose(user.email)}
-                          PaperProps={{
-                            elevation: 2,
-                            sx: { borderRadius: "8px" },
-                          }}
-                        >
-                          <MenuItem
-                            sx={{ color: "text.secondary", pl: 2, pr: 5 }}
-                            onClick={() => handleMenuClose(user.email)}
-                          >
-                            Edit
-                          </MenuItem>
-                          <MenuItem
-                            sx={{ color: "text.secondary", pl: 2, pr: 5 }}
-                            onClick={() => {
-                              handleDeleteSelected();
-                              handleMenuClose(user.email);
+                              fontWeight: 500,
                             }}
                           >
-                            Delete
-                          </MenuItem>
-                        </Menu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                            {user.status ? "Active" : "Inactive"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" color="text.secondary">
+                            {user.last_login
+                              ? new Date(user.last_login).toLocaleDateString()
+                              : "N/A"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="outlined"
+                            endIcon={<KeyboardArrowDownIcon />}
+                            aria-label="more"
+                            sx={{
+                              borderRadius: "8px",
+                              textTransform: "none",
+                              px: 2,
+                              ...(isMenuOpen && {
+                                backgroundColor: theme.palette.primary[100],
+                                borderColor: theme.palette.primary.main,
+                              }),
+                            }}
+                            onClick={(event) =>
+                              handleMenuClick(event, user.email)
+                            }
+                          >
+                            Actions
+                          </Button>
+                          <Menu
+                            anchorEl={menuAnchorEl[user.email]}
+                            open={isMenuOpen}
+                            onClose={() => handleMenuClose(user.email)}
+                            PaperProps={{
+                              elevation: 2,
+                              sx: { borderRadius: "8px" },
+                            }}
+                          >
+                            <MenuItem
+                              sx={{ color: "text.secondary", pl: 2, pr: 5 }}
+                              onClick={() => handleMenuClose(user.email)}
+                            >
+                              Edit
+                            </MenuItem>
+                            <MenuItem
+                              sx={{ color: "text.secondary", pl: 2, pr: 5 }}
+                              onClick={() => {
+                                handleDeleteSelected();
+                                handleMenuClose(user.email);
+                              }}
+                            >
+                              Delete
+                            </MenuItem>
+                          </Menu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </TableContainer>

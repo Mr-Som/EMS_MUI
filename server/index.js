@@ -4,6 +4,7 @@ const session = require("express-session"); // Import express-session middleware
 const authRoutes = require("./routes/authRoutes");
 const gatewayRoutes = require("./routes/gatewayRoutes");
 const mqttRoutes = require("./routes/mqttRoutes");
+const userRoutes = require("./routes/userRoutes");
 const dotenv = require("dotenv");
 const cors = require("cors");
 
@@ -23,6 +24,7 @@ app.use(session(sessionConfig));
 
 // Mount routes
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/gateways", gatewayRoutes);
 app.use("/api/mqtt", mqttRoutes);
 

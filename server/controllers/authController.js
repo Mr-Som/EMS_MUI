@@ -7,7 +7,7 @@ const signup = async (req, res) => {
   try {
     const hashedPassword = await hashPassword(password);
     const result = await pool.query(
-      "INSERT INTO auth (email, phone, first_name, last_name, pwd_hash) VALUES ($1, $2, $3, $4, $5) RETURNING user_id, email",
+      "INSERT INTO users (email, phone, first_name, last_name, pwd_hash) VALUES ($1, $2, $3, $4, $5) RETURNING user_id, email",
       [email, phone, firstName, lastName, hashedPassword]
     );
     const user = result.rows[0];
@@ -24,25 +24,24 @@ const signup = async (req, res) => {
 
 const login = async (req, res) => {
   const { username, password } = req.body; // username can be email or phone
-  //console.log("Login attempt:", { username });
   try {
-    //console.log("Querying database...");
     const result = await pool.query(
-      "SELECT * FROM auth WHERE email = $1 OR phone = $1",
+      "SELECT * FROM users WHERE email = $1 OR phone = $1",
       [username]
     );
-    //console.log("Query result:", result.rows);
     if (result.rows.length === 0)
       return sendError(res, 401, "Invalid credentials");
 
     const user = result.rows[0];
-    //console.log("Comparing password...");
-    //console.log("Password from request:", password);
-    //console.log("Hashed password from DB:", user.pwd_hash);
     const isValid = await comparePassword(password, user.pwd_hash);
-    //console.log("Password comparison result:", isValid);
 
     if (!isValid) return sendError(res, 401, "Invalid credentials");
+
+    // Update users table with active = true and last_login
+    await pool.query(
+      "UPDATE users SET active = true, last_login = CURRENT_TIMESTAMP WHERE user_id = $1",
+      [user.user_id]
+    );
 
     // Store session data in req.session
     req.session.user = { id: user.user_id, email: user.email };
@@ -50,7 +49,6 @@ const login = async (req, res) => {
     req.session.active = true;
     sendSuccess(res, { user: req.session.user }, "Login successful");
   } catch (err) {
-    //console.error("Login error:", err.stack);
     sendError(res, 500, "Server error");
   }
 };
@@ -58,13 +56,23 @@ const login = async (req, res) => {
 const logout = (req, res) => {
   if (!req.session.user) return sendError(res, 400, "No active session");
 
-  req.session.destroy((err) => {
+  const userId = req.session.user.id;
+
+  req.session.destroy(async (err) => {
     if (err) {
-      //console.error("Session destroy error:", err.stack);
       return sendError(res, 500, "Logout failed");
     }
-    res.clearCookie("connect.sid");
-    sendSuccess(res, null, "Logout successful");
+
+    try {
+      // Update users table with active = false after logout
+      await pool.query("UPDATE users SET active = false WHERE user_id = $1", [
+        userId,
+      ]);
+      res.clearCookie("connect.sid");
+      sendSuccess(res, null, "Logout successful");
+    } catch (err) {
+      sendError(res, 500, "Logout failed");
+    }
   });
 };
 

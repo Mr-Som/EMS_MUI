@@ -151,13 +151,6 @@ export default function SignUp(props) {
     const phone = formData.get("phone");
     const email = formData.get("email");
     const password = formData.get("password");
-    console.log("Credentials:", {
-      firstName,
-      lastName,
-      phone,
-      email,
-      password,
-    });
 
     try {
       const response = await axios.post(
@@ -165,12 +158,12 @@ export default function SignUp(props) {
         { firstName, lastName, phone, email, password },
         { withCredentials: true }
       );
-      console.log("Signup response:", response.data);
+      //console.log("Signup response:", response.data);
       if (response.data.success) {
         setSuccessOpen(true); // Open success dialog
       }
     } catch (error) {
-      console.error("Signup error:", error);
+      //console.error("Signup error:", error);
       setSignupError(
         error.response?.data?.message || "Signup failed. Please try again."
       );

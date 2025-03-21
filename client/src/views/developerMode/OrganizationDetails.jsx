@@ -59,9 +59,7 @@ export default function OrganizationDetails() {
             onChange={handleOrgTypeChange}
             label="Organization Type"
           >
-            <MenuItem value="">
-              <em>None</em>
-            </MenuItem>
+            <MenuItem value="">None</MenuItem>
             <MenuItem value="Public">Public</MenuItem>
             <MenuItem value="Private">Private</MenuItem>
             <MenuItem value="Government">Government</MenuItem>
@@ -82,15 +80,6 @@ export default function OrganizationDetails() {
             fullWidth
             id="org_gst"
             label="GST Number"
-            variant="outlined"
-            size="small"
-          />
-        </Grid>
-        <Grid item size={4}>
-          <TextField
-            fullWidth
-            id="org_msme"
-            label="MSME Number"
             variant="outlined"
             size="small"
           />

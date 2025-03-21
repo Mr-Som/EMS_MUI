@@ -76,18 +76,18 @@ const LoginPage = ({ setIsAuthenticated }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted");
+    //console.log("Form submitted");
 
     if (userCaptcha.toUpperCase() !== captchaText) {
       setCaptchaError(true);
-      console.log("CAPTCHA validation failed");
+      //console.log("CAPTCHA validation failed");
       return;
     }
 
     const formData = new FormData(e.target);
     const username = formData.get("username");
     const password = formData.get("password");
-    console.log("Credentials:", { username, password });
+    //console.log("Credentials:", { username, password });
 
     try {
       const response = await axios.post(
@@ -95,13 +95,13 @@ const LoginPage = ({ setIsAuthenticated }) => {
         { username, password },
         { withCredentials: true }
       );
-      console.log("Login response:", response.data);
+      //console.log("Login response:", response.data);
       if (response.data.success) {
         setIsAuthenticated(true); // Update authentication state
         setSuccessOpen(true);
       }
     } catch (error) {
-      console.error("Login error:", error);
+      //console.error("Login error:", error);
       setLoginError(
         error.response?.data?.message ||
           "Invalid credentials. Please try again."
@@ -154,7 +154,12 @@ const LoginPage = ({ setIsAuthenticated }) => {
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
-                      <PersonIcon sx={{ color: "hsla(0, 0%, 100%, .6)" }} />
+                      <IconButton
+                        edge="end"
+                        sx={{ color: "hsla(0, 0%, 100%, .6)" }}
+                      >
+                        <PersonIcon />
+                      </IconButton>
                     </InputAdornment>
                   ),
                 }}
@@ -201,6 +206,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
                     variant="outlined"
                     size="small"
                     label="Enter CAPTCHA"
+                    autoComplete="off"
                     value={userCaptcha}
                     onChange={(e) => {
                       setUserCaptcha(e.target.value);
