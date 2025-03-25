@@ -88,6 +88,7 @@ const LoginPage = ({ setIsAuthenticated }) => {
     const username = formData.get("username");
     const password = formData.get("password");
     console.log("Credentials:", { username, password });
+    console.log("API URL:", import.meta.env.VITE_SERVER_API_URL);
 
     try {
       const response = await axios.post(
