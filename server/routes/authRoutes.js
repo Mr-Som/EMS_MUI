@@ -1,12 +1,13 @@
+// authRoutes.js
 const express = require("express");
 const router = express.Router();
 const { signup, login, logout } = require("../controllers/authController");
-const { validateInput } = require("../middlewares/validationMiddleware");
-const { signupSchema, loginSchema } = require("../validations/authValidation");
+const { validationMiddleware } = require("../middlewares/validationMiddleware");
+const { signupSchema, loginSchema } = require("../schemas/authValidation");
 const { sendSuccess, sendError } = require("../utils/responseUtils");
 
-router.post("/signup", validateInput(signupSchema), signup);
-router.post("/login", validateInput(loginSchema), login);
+router.post("/signup", validationMiddleware(signupSchema), signup);
+router.post("/login", validationMiddleware(loginSchema), login);
 router.post("/logout", logout);
 router.get("/check-session", (req, res) => {
   if (req.session.user) {

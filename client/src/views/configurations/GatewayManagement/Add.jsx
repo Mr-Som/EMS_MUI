@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import axios from "axios";
 import {
   TextField,
   Button,
@@ -12,10 +13,9 @@ import {
   FormControlLabel,
   Radio,
   RadioGroup,
-  InputLabel,
-  Select,
   IconButton,
   styled,
+  Select,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { useTheme } from "@mui/material/styles";
@@ -37,7 +37,7 @@ const UploadArea = styled(Paper)(({ theme }) => ({
   justifyContent: "center",
   cursor: "pointer",
   height: 250,
-  width: 300, // Added a fixed width for consistency
+  width: 300,
   transition: "all 0.3s ease",
   "&:hover": {
     borderColor: theme.palette.primary.main,
@@ -60,54 +60,152 @@ export default function Add() {
   const [tabValue, setTabValue] = useState(0);
   const [scanModalOpen, setScanModalOpen] = useState(false);
   const [scanError, setScanError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const fileInputRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    gatewayId: "GW792",
     nickName: "",
     macAddress: "",
     location: "",
     serialNumber: "",
     projectName: "",
     connectedDevice: "",
-    phaseType: "",
-    voltageMF: "",
-    currentMF: "",
-    energyMF: "",
-    loadType: "",
-    contractLoad: "",
+    networkMode: "WiFi",
+    SSID1: "",
+    Password1: "",
+    SSID2: "",
+    Password2: "",
+    TimeOut: "",
+    apnNme: "",
+    communicationProtocol: "Modbus RTU",
+    baudRate: "9600",
+    dataBits: "8",
+    stopBits: "1",
+    parity: "None",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setSubmitError("");
   };
 
   const handleReset = () => {
     setFormData({
-      gatewayId: "GW792",
       nickName: "",
       macAddress: "",
       location: "",
       serialNumber: "",
       projectName: "",
       connectedDevice: "",
-      phaseType: "",
-      voltageMF: "",
-      currentMF: "",
-      energyMF: "",
-      loadType: "",
-      contractLoad: "",
+      networkMode: "WiFi",
+      SSID1: "",
+      Password1: "",
+      SSID2: "",
+      Password2: "",
+      TimeOut: "",
+      apnNme: "",
+      communicationProtocol: "Modbus RTU",
+      baudRate: "9600",
+      dataBits: "8",
+      stopBits: "1",
+      parity: "None",
     });
+    setSubmitError("");
   };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const requiredFields = [
+      "nickName",
+      "macAddress",
+      "location",
+      "serialNumber",
+      "projectName",
+      "connectedDevice",
+    ];
+    const networkFields = ["SSID1", "Password1", "TimeOut"];
+    const modbusFields = [
+      "communicationProtocol",
+      "baudRate",
+      "dataBits",
+      "stopBits",
+      "parity",
+    ];
+
+    for (let field of requiredFields) {
+      if (!formData[field]) {
+        return `Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`;
+      }
+    }
+
+    if (formData.networkMode === "WiFi" || formData.networkMode === "Both") {
+      for (let field of networkFields) {
+        if (!formData[field]) {
+          return `Please fill in ${field === "TimeOut" ? "WiFi Timeout" : field.replace(/([A-Z])/g, " $1").toLowerCase()}`;
+        }
+      }
+    }
+
+    for (let field of modbusFields) {
+      if (!formData[field]) {
+        return `Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`;
+      }
+    }
+
+    return "";
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/gateways`,
+        {
+          mac_address: formData.macAddress, // Ensure this is in XX:XX:XX:XX:XX:XX format
+          serial_number: formData.serialNumber,
+          nick_name: formData.nickName,
+          project_name: formData.projectName,
+          location: formData.location,
+          meter_count: parseInt(formData.connectedDevice) || 0,
+          network_mode: formData.networkMode,
+          ssid_1: formData.SSID1 || "",
+          ssid_pwd_1: formData.Password1 || "",
+          ssid_2: formData.SSID2 || "",
+          ssid_pwd_2: formData.Password2 || "",
+          ssid_timeout:
+            formData.networkMode === "GSM" ? null : parseInt(formData.TimeOut),
+          apn_name: formData.apnNme || "",
+          md_protocol: formData.communicationProtocol,
+          baud_rate: parseInt(formData.baudRate),
+          data_bits: parseInt(formData.dataBits),
+          stop_bits: parseInt(formData.stopBits),
+          parity: formData.parity.toLowerCase(),
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        navigate("/gatewayManagement");
+      } else {
+        setSubmitError(response.data.error || "Failed to add gateway");
+      }
+    } catch (error) {
+      setSubmitError(
+        error.response?.data?.message ||
+          "Failed to add gateway. Please try again."
+      );
+    }
   };
 
   const handleScan = (data) => {
@@ -118,7 +216,6 @@ export default function Add() {
           ...prev,
           macAddress: parsedData.macAddress || "",
           serialNumber: parsedData.serialNumber || "",
-          gatewayId: parsedData.gatewayId || "",
           location: parsedData.location || "",
         }));
         setScanModalOpen(false);
@@ -247,14 +344,10 @@ export default function Add() {
                     <Grid container spacing={2}>
                       {[
                         {
-                          label: "Gateway ID",
-                          name: "gatewayId",
-                          disabled: true,
-                        },
-                        {
                           label: "Serial No",
                           name: "serialNumber",
                           placeholder: "XL31245EA",
+                          required: true,
                         },
                         {
                           label: "Preferred Name",
@@ -266,6 +359,7 @@ export default function Add() {
                           label: "Project Name",
                           name: "projectName",
                           placeholder: "Metering System",
+                          required: true,
                         },
                         {
                           label: "MAC Address",
@@ -278,6 +372,7 @@ export default function Add() {
                           name: "connectedDevice",
                           type: "number",
                           placeholder: "10",
+                          required: true,
                         },
                         {
                           label: "Location",
@@ -294,7 +389,6 @@ export default function Add() {
                           </Grid>
                           <Grid size={{ xs: 8 }}>
                             <TextField
-                              disabled={field.disabled}
                               size="small"
                               fullWidth
                               name={field.name}
@@ -323,8 +417,9 @@ export default function Add() {
                     <FormControl fullWidth size="small">
                       <RadioGroup
                         row
-                        aria-labelledby="demo-row-radio-buttons-group-label"
-                        name="row-radio-buttons-group"
+                        name="networkMode"
+                        value={formData.networkMode}
+                        onChange={handleChange}
                       >
                         <FormControlLabel
                           value="GSM"
@@ -347,7 +442,7 @@ export default function Add() {
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      Wifi SSID 1
+                      WiFi SSID 1
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -355,14 +450,15 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="SSID1"
-                      value={formData.contractLoad}
+                      value={formData.SSID1}
                       onChange={handleChange}
+                      required={formData.networkMode !== "GSM"}
                     />
                   </Grid>
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      Wifi Password 1
+                      WiFi Password 1
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -370,14 +466,15 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="Password1"
-                      value={formData.contractLoad}
+                      value={formData.Password1}
                       onChange={handleChange}
+                      required={formData.networkMode !== "GSM"}
                     />
                   </Grid>
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      Wifi SSID 2
+                      WiFi SSID 2
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -385,14 +482,14 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="SSID2"
-                      value={formData.contractLoad}
+                      value={formData.SSID2}
                       onChange={handleChange}
                     />
                   </Grid>
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      Wifi Password 2
+                      WiFi Password 2
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -400,14 +497,14 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="Password2"
-                      value={formData.contractLoad}
+                      value={formData.Password2}
                       onChange={handleChange}
                     />
                   </Grid>
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      Wifi TimeOut (s)
+                      WiFi Timeout (s)
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -415,14 +512,15 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="TimeOut"
-                      value={formData.contractLoad}
+                      value={formData.TimeOut}
                       onChange={handleChange}
+                      required={formData.networkMode !== "GSM"}
                     />
                   </Grid>
                   <Grid size={{ xs: 4 }}></Grid>
                   <Grid size={{ xs: 4 }}>
                     <Typography variant="body2" sx={{ pt: 1 }}>
-                      APN Nme
+                      APN Name
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 4 }}>
@@ -430,7 +528,7 @@ export default function Add() {
                       size="small"
                       fullWidth
                       name="apnNme"
-                      value={formData.contractLoad}
+                      value={formData.apnNme}
                       onChange={handleChange}
                     />
                   </Grid>
@@ -450,6 +548,7 @@ export default function Add() {
                         name="communicationProtocol"
                         value={formData.communicationProtocol}
                         onChange={handleChange}
+                        required
                       >
                         <MenuItem value="Modbus RTU">Modbus RTU</MenuItem>
                         <MenuItem value="Modbus TCP">Modbus TCP</MenuItem>
@@ -466,9 +565,10 @@ export default function Add() {
                   <Grid size={{ xs: 4 }}>
                     <FormControl fullWidth size="small">
                       <Select
-                        name="communicationProtocol"
-                        value={formData.communicationProtocol}
+                        name="baudRate"
+                        value={formData.baudRate}
                         onChange={handleChange}
+                        required
                       >
                         <MenuItem value="2400">2400</MenuItem>
                         <MenuItem value="4800">4800</MenuItem>
@@ -488,9 +588,10 @@ export default function Add() {
                   <Grid size={{ xs: 4 }}>
                     <FormControl fullWidth size="small">
                       <Select
-                        name="communicationProtocol"
-                        value={formData.communicationProtocol}
+                        name="dataBits"
+                        value={formData.dataBits}
                         onChange={handleChange}
+                        required
                       >
                         <MenuItem value="8">8</MenuItem>
                         <MenuItem value="7">7</MenuItem>
@@ -506,9 +607,10 @@ export default function Add() {
                   <Grid size={{ xs: 4 }}>
                     <FormControl fullWidth size="small">
                       <Select
-                        name="communicationProtocol"
-                        value={formData.communicationProtocol}
+                        name="stopBits"
+                        value={formData.stopBits}
                         onChange={handleChange}
+                        required
                       >
                         <MenuItem value="1">1</MenuItem>
                         <MenuItem value="2">2</MenuItem>
@@ -524,9 +626,10 @@ export default function Add() {
                   <Grid size={{ xs: 4 }}>
                     <FormControl fullWidth size="small">
                       <Select
-                        name="communicationProtocol"
-                        value={formData.communicationProtocol}
+                        name="parity"
+                        value={formData.parity}
                         onChange={handleChange}
+                        required
                       >
                         <MenuItem value="None">None</MenuItem>
                         <MenuItem value="Even">Even</MenuItem>
@@ -537,6 +640,12 @@ export default function Add() {
                 </Grid>
               </TabPanel>
             </Paper>
+
+            {submitError && (
+              <Typography color="danger" variant="body2" sx={{ mt: 2 }}>
+                {submitError}
+              </Typography>
+            )}
 
             <Box
               sx={{

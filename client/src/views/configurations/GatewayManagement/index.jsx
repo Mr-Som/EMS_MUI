@@ -34,15 +34,14 @@ export default function GatewayManagement() {
   const [selected, setSelected] = useState([]);
   const [gateways, setGateways] = useState([]);
   const [menuAnchorEl, setMenuAnchorEl] = useState({});
-  const [loading, setLoading] = useState(true); // Added loading state
+  const [loading, setLoading] = useState(true);
 
-  // Fetch gateways on component mount
   useEffect(() => {
     fetchGateways();
   }, []);
 
   const fetchGateways = async () => {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_SERVER_API_URL}/api/gateways`,
@@ -50,7 +49,8 @@ export default function GatewayManagement() {
       );
       if (response.data.success) {
         const mappedGateways = response.data.data.map((gateway) => ({
-          gatewayId: gateway.gateway_id,
+          gatewayId: `GW${gateway.uid}`,
+          gatewayUuid: gateway.gateway_id,
           nickName: gateway.nick_name,
           projectName: gateway.project_name,
           location: gateway.location,
@@ -70,58 +70,100 @@ export default function GatewayManagement() {
         error.response?.data?.message || error.message
       );
     } finally {
-      setLoading(false); // Stop loading regardless of success or failure
+      setLoading(false);
     }
   };
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = gateways.map((gateway) => gateway.gatewayId);
+      const newSelected = gateways.map((gateway) => gateway.gatewayUuid);
       setSelected(newSelected);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (gatewayId) => {
-    const selectedIndex = selected.indexOf(gatewayId);
+  const handleClick = (gatewayUuid) => {
+    const selectedIndex = selected.indexOf(gatewayUuid);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = [...selected, gatewayId];
+      newSelected = [...selected, gatewayUuid];
     } else {
-      newSelected = selected.filter((id) => id !== gatewayId);
+      newSelected = selected.filter((id) => id !== gatewayUuid);
     }
 
     setSelected(newSelected);
   };
 
-  const handleMenuClick = (event, gatewayId) => {
-    setMenuAnchorEl({ ...menuAnchorEl, [gatewayId]: event.currentTarget });
+  const handleMenuClick = (event, gatewayUuid) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [gatewayUuid]: event.currentTarget });
   };
 
-  const handleMenuClose = (gatewayId) => {
-    setMenuAnchorEl({ ...menuAnchorEl, [gatewayId]: null });
+  const handleMenuClose = (gatewayUuid) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [gatewayUuid]: null });
   };
 
-  const handleDeleteSelected = () => {
-    setGateways(
-      gateways.filter((gateway) => !selected.includes(gateway.gatewayId))
-    );
-    setSelected([]);
+  const handleDeleteSelected = async () => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/gateways`,
+        {
+          data: { gateway_ids: selected },
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setGateways(
+          gateways.filter((gateway) => !selected.includes(gateway.gatewayUuid))
+        );
+        setSelected([]);
+      } else {
+        console.error("Failed to delete gateways:", response.data.error);
+      }
+    } catch (error) {
+      console.error(
+        "Error deleting gateways:",
+        error.response?.data?.message || error.message
+      );
+    }
   };
 
-  const handleToggleEnabled = (gatewayId) => {
+  const handleDeleteGateway = async (gatewayUuid) => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/gateways`,
+        {
+          data: { gateway_ids: [gatewayUuid] },
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setGateways(
+          gateways.filter((gateway) => gateway.gatewayUuid !== gatewayUuid)
+        );
+      } else {
+        console.error("Failed to delete gateway:", response.data.error);
+      }
+    } catch (error) {
+      console.error(
+        "Error deleting gateway:",
+        error.response?.data?.message || error.message
+      );
+    }
+  };
+
+  const handleToggleEnabled = (gatewayUuid) => {
     setGateways(
       gateways.map((gateway) =>
-        gateway.gatewayId === gatewayId
+        gateway.gatewayUuid === gatewayUuid
           ? { ...gateway, enabled: !gateway.enabled }
           : gateway
       )
     );
   };
 
-  const isSelected = (gatewayId) => selected.indexOf(gatewayId) !== -1;
+  const isSelected = (gatewayUuid) => selected.indexOf(gatewayUuid) !== -1;
 
   return (
     <Grid container spacing={1} sx={{ flexGrow: 1, width: "100%", p: 3 }}>
@@ -159,7 +201,7 @@ export default function GatewayManagement() {
                 </Button>
                 <Button
                   variant="contained"
-                  color="error"
+                  color="danger"
                   startIcon={<DeleteIcon />}
                   onClick={handleDeleteSelected}
                   sx={{
@@ -300,13 +342,15 @@ export default function GatewayManagement() {
                   </TableRow>
                 ) : (
                   gateways.map((gateway) => {
-                    const isItemSelected = isSelected(gateway.gatewayId);
-                    const isMenuOpen = Boolean(menuAnchorEl[gateway.gatewayId]);
+                    const isItemSelected = isSelected(gateway.gatewayUuid);
+                    const isMenuOpen = Boolean(
+                      menuAnchorEl[gateway.gatewayUuid]
+                    );
 
                     return (
                       <TableRow
                         hover
-                        key={gateway.gatewayId}
+                        key={gateway.gatewayUuid}
                         selected={isItemSelected}
                         sx={{
                           "&:hover": {
@@ -318,12 +362,12 @@ export default function GatewayManagement() {
                           <Checkbox
                             color="primary"
                             checked={isItemSelected}
-                            onClick={() => handleClick(gateway.gatewayId)}
+                            onClick={() => handleClick(gateway.gatewayUuid)}
                           />
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2">
-                            {gateway.gatewayId}
+                            {gateway.gatewayId} {/* Displays GW<uid> */}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
@@ -374,7 +418,7 @@ export default function GatewayManagement() {
                           <Switch
                             checked={gateway.enabled}
                             onChange={() =>
-                              handleToggleEnabled(gateway.gatewayId)
+                              handleToggleEnabled(gateway.gatewayUuid)
                             }
                           />
                         </TableCell>
@@ -393,15 +437,15 @@ export default function GatewayManagement() {
                               }),
                             }}
                             onClick={(event) =>
-                              handleMenuClick(event, gateway.gatewayId)
+                              handleMenuClick(event, gateway.gatewayUuid)
                             }
                           >
                             Actions
                           </Button>
                           <Menu
-                            anchorEl={menuAnchorEl[gateway.gatewayId]}
+                            anchorEl={menuAnchorEl[gateway.gatewayUuid]}
                             open={isMenuOpen}
-                            onClose={() => handleMenuClose(gateway.gatewayId)}
+                            onClose={() => handleMenuClose(gateway.gatewayUuid)}
                             PaperProps={{
                               elevation: 2,
                               sx: { borderRadius: "8px" },
@@ -410,7 +454,7 @@ export default function GatewayManagement() {
                             <MenuItem
                               sx={{ color: "text.secondary", pl: 2, pr: 5 }}
                               onClick={() => {
-                                handleMenuClose(gateway.gatewayId);
+                                handleMenuClose(gateway.gatewayUuid);
                               }}
                             >
                               Edit
@@ -418,8 +462,8 @@ export default function GatewayManagement() {
                             <MenuItem
                               sx={{ color: "text.secondary", pl: 2, pr: 5 }}
                               onClick={() => {
-                                handleDeleteGateway(gateway.gatewayId);
-                                handleMenuClose(gateway.gatewayId);
+                                handleDeleteGateway(gateway.gatewayUuid);
+                                handleMenuClose(gateway.gatewayUuid);
                               }}
                             >
                               Delete
@@ -438,8 +482,3 @@ export default function GatewayManagement() {
     </Grid>
   );
 }
-
-// Dummy handleDeleteGateway function
-const handleDeleteGateway = (gatewayId) => {
-  console.log(`Delete gateway: ${gatewayId}`);
-};

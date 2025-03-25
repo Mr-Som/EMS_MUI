@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Button,
@@ -15,8 +16,8 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import Grid from "@mui/material/Grid2";
-import { useNavigate, useLocation } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import DefaultThumbnail from "../../../assets/default-thumbnail.svg";
 import {
   ArrowBack as ArrowBackIcon,
   Close as CloseIcon,
@@ -31,42 +32,54 @@ function TabPanel(props) {
   );
 }
 
-const DefaultThumbnail = () => (
-  <svg
-    width="80"
-    viewBox="0 0 900 900"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M328.063 589.559C293.977 589.559 263.656 567.734 252.646 535.242L251.902 532.794C249.305 524.19 248.217 516.954 248.217 509.714V364.541L196.563 536.966C189.92 562.327 205.059 588.62 230.459 595.626L559.701 683.799C563.811 684.863 567.92 685.374 571.967 685.374C593.172 685.374 612.548 671.3 617.979 650.559L637.161 589.559H328.063Z"
-      fill="#DCE5F1"
-    />
-    <path
-      d="M386.618 365.991C410.104 365.991 429.2 346.892 429.2 323.406C429.2 299.92 410.104 280.82 386.618 280.82C363.132 280.82 344.032 299.92 344.032 323.406C344.032 346.892 363.132 365.991 386.618 365.991Z"
-      fill="#DCE5F1"
-    />
-    <path
-      d="M652.768 216.944H333.385C304.047 216.944 280.156 240.835 280.156 270.177V504.388C280.156 533.73 304.047 557.621 333.385 557.621H652.768C682.11 557.621 706.001 533.73 706.001 504.388V270.177C706.001 240.835 682.11 216.944 652.768 216.944V216.944ZM333.385 259.529H652.768C658.647 259.529 663.415 264.297 663.415 270.177V421.33L596.155 342.845C589.02 334.478 578.692 330.006 567.6 329.753C556.571 329.815 546.224 334.712 539.155 343.188L460.074 438.106L434.311 412.406C419.749 397.844 396.049 397.844 381.507 412.406L322.741 471.152V270.177C322.741 264.297 327.510 259.529 333.385 259.529V259.529Z"
-      fill="#DCE5F1"
-    />
-  </svg>
-);
-
 export default function Add() {
   const navigate = useNavigate();
   const theme = useTheme();
   const [tabValue, setTabValue] = useState(0);
+  const [submitError, setSubmitError] = useState("");
+  const [gateways, setGateways] = useState([]);
   const [formData, setFormData] = useState({
-    meterId: "MT608977",
-    description: "",
-    model: "",
-    thumbnail: null,
-    nickName: "",
     serialNumber: "",
+    modelName: "",
+    thumbnail: null, // Holds file preview URL
+    thumbnailFile: null, // Holds the actual file object
+    nickName: "",
     gatewayId: "",
     location: "",
+    mdProtocol: "Modbus RTU",
+    mdId: "",
+    ctPrimary: "",
+    ctSecondary: "",
+    ptPrimary: "",
+    ptSecondary: "",
+    voltageMf: "",
+    currentMf: "",
+    energyMf: "",
+    phaseType: "",
+    loadType: "",
+    contractKw: "",
   });
+
+  useEffect(() => {
+    fetchGateways();
+  }, []);
+
+  const fetchGateways = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/gateways`,
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        setGateways(response.data.data);
+        console.log("Fetched gateways:", response.data.data); // Debug log
+      } else {
+        console.error("Failed to fetch gateways:", response.data.error);
+      }
+    } catch (error) {
+      console.error("Error fetching gateways:", error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,28 +87,48 @@ export default function Add() {
       ...formData,
       [name]: value,
     });
+    setSubmitError("");
   };
 
   const handleReset = () => {
     setFormData({
-      meterId: "",
-      description: "",
-      model: "",
-      thumbnail: null,
-      nickName: "",
       serialNumber: "",
+      modelName: "",
+      thumbnail: null,
+      thumbnailFile: null,
+      nickName: "",
       gatewayId: "",
       location: "",
+      mdProtocol: "Modbus RTU",
+      mdId: "",
+      ctPrimary: "",
+      ctSecondary: "",
+      ptPrimary: "",
+      ptSecondary: "",
+      voltageMf: "",
+      currentMf: "",
+      energyMf: "",
+      phaseType: "",
+      loadType: "",
+      contractKw: "",
     });
+    setSubmitError("");
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        setSubmitError("File size exceeds 5MB limit");
+        return;
+      }
       setFormData({
         ...formData,
         thumbnail: URL.createObjectURL(file),
+        thumbnailFile: file,
       });
+      setSubmitError("");
     }
   };
 
@@ -103,9 +136,78 @@ export default function Add() {
     setTabValue(newValue);
   };
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const requiredFields = [
+      "serialNumber",
+      "modelName",
+      "nickName",
+      "gatewayId",
+      "location",
+      "mdId",
+    ];
+    for (let field of requiredFields) {
+      if (!formData[field]) {
+        return `Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`;
+      }
+    }
+    return "";
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("gateway_id", formData.gatewayId);
+    formDataToSend.append("serial_number", formData.serialNumber);
+    formDataToSend.append("model_name", formData.modelName);
+    formDataToSend.append("nick_name", formData.nickName);
+    formDataToSend.append("location", formData.location);
+    formDataToSend.append("md_protocol", formData.mdProtocol);
+    formDataToSend.append("md_id", formData.mdId);
+    formDataToSend.append("ct_primary", formData.ctPrimary || "");
+    formDataToSend.append("ct_secondary", formData.ctSecondary || "");
+    formDataToSend.append("pt_primary", formData.ptPrimary || "");
+    formDataToSend.append("pt_secondary", formData.ptSecondary || "");
+    formDataToSend.append("voltage_mf", formData.voltageMf || "");
+    formDataToSend.append("current_mf", formData.currentMf || "");
+    formDataToSend.append("energy_mf", formData.energyMf || "");
+    formDataToSend.append("phase_type", formData.phaseType || "");
+    formDataToSend.append("load_type", formData.loadType || "");
+    formDataToSend.append("contract_kw", formData.contractKw || "");
+    if (formData.thumbnailFile) {
+      formDataToSend.append("thumbnail", formData.thumbnailFile);
+    }
+
+    // Debug log FormData contents
+    for (let pair of formDataToSend.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/meters`,
+        formDataToSend,
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        navigate("/meterManagement");
+      } else {
+        setSubmitError(response.data.error || "Failed to add meter");
+      }
+    } catch (error) {
+      console.error("Submit error:", error.response?.data);
+      setSubmitError(
+        error.response?.data?.message ||
+          "Failed to add meter. Please try again."
+      );
+    }
   };
 
   return (
@@ -144,10 +246,11 @@ export default function Add() {
             <FormControl fullWidth size="small">
               <InputLabel>Select Model</InputLabel>
               <Select
-                name="model"
-                value={formData.model}
+                name="modelName"
+                value={formData.modelName}
                 onChange={handleChange}
                 label="Select Model"
+                required
               >
                 <MenuItem value="ELITE 100">ELITE 100</MenuItem>
                 <MenuItem value="ELITE 300">ELITE 300</MenuItem>
@@ -227,8 +330,12 @@ export default function Add() {
                         },
                       }}
                       onClick={() =>
-                        setFormData((prev) => ({ ...prev, thumbnail: null }))
-                      } // Fixed line
+                        setFormData((prev) => ({
+                          ...prev,
+                          thumbnail: null,
+                          thumbnailFile: null,
+                        }))
+                      }
                     >
                       <CloseIcon fontSize="small" />
                     </IconButton>
@@ -244,7 +351,11 @@ export default function Add() {
                   </>
                 ) : (
                   <Box sx={{ textAlign: "center" }}>
-                    <DefaultThumbnail />
+                    <img
+                      src={DefaultThumbnail}
+                      alt="Default Thumbnail"
+                      style={{ width: 80, height: 80 }}
+                    />
                     <Typography
                       variant="body2"
                       color="textSecondary"
@@ -317,23 +428,6 @@ export default function Add() {
                 <Grid container spacing={2}>
                   <Grid item size={2}>
                     <Typography variant="body2" gutterBottom>
-                      Meter Id
-                    </Typography>
-                  </Grid>
-                  <Grid item size={4}>
-                    <TextField
-                      disabled
-                      size="small"
-                      fullWidth
-                      placeholder="Meter Id"
-                      name="meterId"
-                      value={formData.meterId}
-                      onChange={handleChange}
-                    />
-                  </Grid>
-
-                  <Grid item size={2}>
-                    <Typography variant="body2" gutterBottom>
                       Meter Name
                     </Typography>
                   </Grid>
@@ -371,17 +465,26 @@ export default function Add() {
                     </Typography>
                   </Grid>
                   <Grid item size={4}>
-                    <TextField
-                      size="small"
-                      fullWidth
-                      placeholder="Gateway ID"
-                      name="gatewayId"
-                      value={formData.gatewayId}
-                      onChange={handleChange}
-                      required
-                    />
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Select Gateway</InputLabel>
+                      <Select
+                        name="gatewayId"
+                        value={formData.gatewayId}
+                        onChange={handleChange}
+                        label="Select Gateway"
+                        required
+                      >
+                        {gateways.map((gateway) => (
+                          <MenuItem
+                            key={gateway.gateway_id}
+                            value={gateway.gateway_id}
+                          >
+                            GW{gateway.uid} - {gateway.nick_name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </Grid>
-
                   <Grid item size={2}>
                     <Typography variant="body2">CT Primary</Typography>
                   </Grid>
@@ -393,6 +496,7 @@ export default function Add() {
                       name="ctPrimary"
                       value={formData.ctPrimary}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -406,6 +510,7 @@ export default function Add() {
                       name="ctSecondary"
                       value={formData.ctSecondary}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -419,6 +524,7 @@ export default function Add() {
                       name="ptPrimary"
                       value={formData.ptPrimary}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -429,23 +535,25 @@ export default function Add() {
                       size="small"
                       fullWidth
                       placeholder="PT Secondary"
-                      name="ptSecondary" // Fixed typo: ptPrimary → ptSecondary
+                      name="ptSecondary"
                       value={formData.ptSecondary}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
-
                   <Grid item size={2}>
-                    <Typography variant="body2">Modbus Id</Typography>
+                    <Typography variant="body2">Modbus ID</Typography>
                   </Grid>
                   <Grid item size={4}>
                     <TextField
                       size="small"
                       fullWidth
-                      placeholder="Modbus Id"
-                      name="modbusId"
-                      value={formData.modbusId}
+                      placeholder="Modbus ID"
+                      name="mdId"
+                      value={formData.mdId}
                       onChange={handleChange}
+                      type="number"
+                      required
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -455,8 +563,8 @@ export default function Add() {
                     <FormControl fullWidth size="small">
                       <InputLabel>Select Protocol</InputLabel>
                       <Select
-                        name="communicationProtocol"
-                        value={formData.communicationProtocol}
+                        name="mdProtocol"
+                        value={formData.mdProtocol}
                         onChange={handleChange}
                         label="Select Protocol"
                       >
@@ -499,10 +607,10 @@ export default function Add() {
                         onChange={handleChange}
                         label="Select Phase Type"
                       >
-                        <MenuItem value="Single Phase">1P2W</MenuItem>
-                        <MenuItem value="Three Phase Three Wire">3P3W</MenuItem>
-                        <MenuItem value="Three Phase with Neutral">
-                          3P4W
+                        <MenuItem value="1P2W">Single Phase</MenuItem>
+                        <MenuItem value="3P3W">Three Phase Three Wire</MenuItem>
+                        <MenuItem value="3P4W">
+                          Three Phase with Neutral
                         </MenuItem>
                       </Select>
                     </FormControl>
@@ -516,9 +624,10 @@ export default function Add() {
                       size="small"
                       fullWidth
                       placeholder="Voltage MF"
-                      name="voltageMF"
-                      value={formData.voltageMF}
+                      name="voltageMf"
+                      value={formData.voltageMf}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -529,9 +638,10 @@ export default function Add() {
                       size="small"
                       fullWidth
                       placeholder="Current MF"
-                      name="currentMF"
-                      value={formData.currentMF}
+                      name="currentMf"
+                      value={formData.currentMf}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={2}>
@@ -542,9 +652,10 @@ export default function Add() {
                       size="small"
                       fullWidth
                       placeholder="Energy MF"
-                      name="energyMF"
-                      value={formData.energyMF}
+                      name="energyMf"
+                      value={formData.energyMf}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                   <Grid item size={6}></Grid>
@@ -574,14 +685,21 @@ export default function Add() {
                       size="small"
                       fullWidth
                       placeholder="Contract Load (kW)"
-                      name="contractLoad"
-                      value={formData.contractLoad}
+                      name="contractKw"
+                      value={formData.contractKw}
                       onChange={handleChange}
+                      type="number"
                     />
                   </Grid>
                 </Grid>
               </TabPanel>
             </Paper>
+
+            {submitError && (
+              <Typography color="danger" variant="body2" sx={{ mt: 2 }}>
+                {submitError}
+              </Typography>
+            )}
           </Box>
 
           {/* Action Buttons */}

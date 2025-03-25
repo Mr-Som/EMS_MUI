@@ -1,4 +1,4 @@
-# MQTT Gateway Management System
+# Energy monitoring system
 
 A Node.js application for managing gateways, handling MQTT messages, and user authentication with PostgreSQL.
 

@@ -4,16 +4,16 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const mqttConfig = {
-  host: process.env.MQTT_BROKER_HOST || "test.mosquitto.org", // Just the hostname
-  port: process.env.MQTT_PORT || 1883, // Default MQTT port
-  protocol: "mqtt", // Explicitly specify protocol
+  host: process.env.MQTT_BROKER_HOST || "3.109.3.58",
+  port: process.env.MQTT_PORT || 1883,
+  protocol: "mqtt",
   username: process.env.MQTT_USERNAME || "",
   password: process.env.MQTT_PASSWORD || "",
   clientId: `mqtt_${Math.random().toString(16).slice(2)}`,
-  reconnectPeriod: 1000, // Reconnect after 1 second if disconnected
+  reconnectPeriod: 1000,
 };
 
-const client = mqtt.connect(mqttConfig); // Pass the entire config object
+const client = mqtt.connect(mqttConfig);
 
 client.on("connect", () => {
   console.log("Connected to MQTT broker");

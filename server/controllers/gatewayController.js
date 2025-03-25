@@ -34,6 +34,7 @@ const addGateway = async (req, res) => {
     nick_name,
     project_name,
     location,
+    meter_count,
     network_mode,
     ssid_1,
     ssid_pwd_1,
@@ -46,7 +47,7 @@ const addGateway = async (req, res) => {
     data_bits,
     stop_bits,
     parity,
-  } = req.body; // Validated by middleware
+  } = req.body;
 
   try {
     const userResult = await pool.query(
@@ -61,11 +62,11 @@ const addGateway = async (req, res) => {
     const result = await pool.query(
       `
       INSERT INTO gateways (
-        mac_address, serial_number, nick_name, project_name, location,
+        mac_address, serial_number, nick_name, project_name, location, meter_count,
         network_mode, ssid_1, ssid_pwd_1, ssid_2, ssid_pwd_2, ssid_timeout,
         apn_name, md_protocol, baud_rate, data_bits, stop_bits, parity,
         subscription_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *
       `,
       [
@@ -74,6 +75,7 @@ const addGateway = async (req, res) => {
         nick_name,
         project_name,
         location,
+        meter_count,
         network_mode,
         ssid_1,
         ssid_pwd_1,
@@ -168,7 +170,7 @@ const editGateway = async (req, res) => {
 };
 
 const deleteGateway = async (req, res) => {
-  const { gateway_ids } = req.body; // Validated by middleware
+  const { gateway_ids } = req.body;
 
   try {
     const result = await pool.query(

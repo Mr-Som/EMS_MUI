@@ -1,14 +1,16 @@
-const { sendError } = require("../utils/responseUtils");
+// validationMiddleware.js
+const Joi = require("joi");
 
-const validateInput = (schema) => {
+const validationMiddleware = (schema) => {
   return (req, res, next) => {
-    const { error } = schema(req.body);
+    const { error } = schema.validate(req.body);
     if (error) {
-      const errorMessage = error.details[0].message;
-      return sendError(res, 400, errorMessage);
+      return res
+        .status(400)
+        .json({ success: false, error: error.details[0].message });
     }
     next();
   };
 };
 
-module.exports = { validateInput };
+module.exports = { validationMiddleware };

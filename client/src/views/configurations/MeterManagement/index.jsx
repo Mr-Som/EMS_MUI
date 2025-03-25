@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
-  Box,
   Button,
-  Divider,
   Paper,
   Stack,
   Typography,
@@ -13,113 +12,162 @@ import {
   TableCell,
   TableBody,
   Checkbox,
-  Avatar,
   Menu,
   MenuItem,
   Switch,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { useTheme } from "@mui/material/styles";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 // Icons
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreVertIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon,
   DriveFileRenameOutline as EditIcon,
 } from "@mui/icons-material";
 
 export default function MeterManagement() {
-  const theme = useTheme();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [selected, setSelected] = useState([]);
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [currentMeter, setCurrentMeter] = useState(null);
-  const [meters, setMeters] = useState([
-    {
-      meterId: "M001",
-      nickName: "Meter 1",
-      projectName: "Project 1",
-      installLocation: "Location A",
-      connectedGatewayId: "GW001",
-      modelName: "Model X",
-      serialNumber: "SN123456",
-      modbusId: "MB001",
-      createTime: "2025-03-08",
-      status: "Active",
-      enabled: true,
-    },
-    {
-      meterId: "M002",
-      nickName: "Meter 2",
-      projectName: "Project 2",
-      installLocation: "Location B",
-      connectedGatewayId: "GW002",
-      modelName: "Model Y",
-      serialNumber: "SN654321",
-      modbusId: "MB002",
-      createTime: "2025-03-07",
-      status: "Inactive",
-      enabled: false,
-    },
-  ]);
-
+  const [meters, setMeters] = useState([]);
   const [menuAnchorEl, setMenuAnchorEl] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMeters();
+  }, []);
+
+  const fetchMeters = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/meters`,
+        { withCredentials: true }
+      );
+      if (response.data.success) {
+        const mappedMeters = response.data.data.map((meter) => ({
+          meterId: `M${meter.uid}`,
+          meterUuid: meter.meter_id,
+          nickName: meter.nick_name,
+          projectName: meter.project_name || "N/A",
+          installLocation: meter.location,
+          connectedGatewayId: `GW${meter.gateway_uid || meter.gateway_id}`,
+          modelName: meter.model_name,
+          serialNumber: meter.serial_number,
+          modbusId: meter.md_id,
+          createTime: new Date(meter.created_at).toLocaleDateString(),
+          status: meter.online ? "Online" : "Offline",
+          enabled: true,
+        }));
+        setMeters(mappedMeters);
+      } else {
+        console.error("Failed to fetch meters:", response.data.error);
+      }
+    } catch (error) {
+      console.error(
+        "Error fetching meters:",
+        error.response?.data?.message || error.message
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = meters.map((meter) => meter.meterId);
+      const newSelected = meters.map((meter) => meter.meterUuid);
       setSelected(newSelected);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (meterId) => {
-    const selectedIndex = selected.indexOf(meterId);
+  const handleClick = (meterUuid) => {
+    const selectedIndex = selected.indexOf(meterUuid);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = [...selected, meterId];
+      newSelected = [...selected, meterUuid];
     } else {
-      newSelected = selected.filter((id) => id !== meterId);
+      newSelected = selected.filter((id) => id !== meterUuid);
     }
 
     setSelected(newSelected);
   };
 
-  const handleMenuClick = (event, meterId) => {
-    setMenuAnchorEl({ ...menuAnchorEl, [meterId]: event.currentTarget });
+  const handleMenuClick = (event, meterUuid) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [meterUuid]: event.currentTarget });
   };
 
-  const handleMenuClose = (meterId) => {
-    setMenuAnchorEl({ ...menuAnchorEl, [meterId]: null });
+  const handleMenuClose = (meterUuid) => {
+    setMenuAnchorEl({ ...menuAnchorEl, [meterUuid]: null });
   };
 
-  const handleDeleteSelected = () => {
-    setMeters(meters.filter((meter) => !selected.includes(meter.meterId)));
-    setSelected([]);
+  const handleDeleteSelected = async () => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/meters`,
+        {
+          data: { meter_ids: selected },
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setMeters(
+          meters.filter((meter) => !selected.includes(meter.meterUuid))
+        );
+        setSelected([]);
+      } else {
+        console.error("Failed to delete meters:", response.data.error);
+      }
+    } catch (error) {
+      console.error(
+        "Error deleting meters:",
+        error.response?.data?.message || error.message
+      );
+    }
   };
 
-  const handleToggleEnabled = (meterId) => {
+  const handleDeleteMeter = async (meterUuid) => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_SERVER_API_URL}/api/meters`,
+        {
+          data: { meter_ids: [meterUuid] },
+          withCredentials: true,
+        }
+      );
+      if (response.data.success) {
+        setMeters(meters.filter((meter) => meter.meterUuid !== meterUuid));
+      } else {
+        console.error("Failed to delete meter:", response.data.error);
+      }
+    } catch (error) {
+      console.error(
+        "Error deleting meter:",
+        error.response?.data?.message || error.message
+      );
+    }
+  };
+
+  const handleEditMeter = (meterUuid) => {
+    navigate(`/meterManagement/Edit/${meterUuid}`);
+  };
+
+  const handleToggleEnabled = (meterUuid) => {
     setMeters(
       meters.map((meter) =>
-        meter.meterId === meterId
+        meter.meterUuid === meterUuid
           ? { ...meter, enabled: !meter.enabled }
           : meter
       )
     );
   };
 
-  const isSelected = (meterId) => selected.indexOf(meterId) !== -1;
+  const isSelected = (meterUuid) => selected.indexOf(meterUuid) !== -1;
 
   return (
     <Grid container spacing={1} sx={{ flexGrow: 1, width: "100%", p: 3 }}>
@@ -147,6 +195,13 @@ export default function MeterManagement() {
                 <Button
                   variant="contained"
                   startIcon={<EditIcon />}
+                  onClick={() => {
+                    if (selected.length === 1) {
+                      handleEditMeter(selected[0]);
+                    } else {
+                      console.log("Bulk edit not implemented");
+                    }
+                  }}
                   sx={{
                     borderRadius: "8px",
                     textTransform: "none",
@@ -238,7 +293,10 @@ export default function MeterManagement() {
                   >
                     Project Name
                   </TableCell>
-                  <TableCell sx={{ color: "#fafafa", fontWeight: 600 }}>
+                  <TableCell
+                    sx={{ color: "#fafafa", fontWeight: 600 }}
+                    align="center"
+                  >
                     Install Location
                   </TableCell>
                   <TableCell
@@ -292,142 +350,161 @@ export default function MeterManagement() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {meters.map((meter) => {
-                  const isItemSelected = isSelected(meter.meterId);
-                  const isMenuOpen = Boolean(menuAnchorEl[meter.meterId]);
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={13} align="center">
+                      <Typography>Loading...</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : meters.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={13} align="center">
+                      <Typography>No meters found.</Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  meters.map((meter) => {
+                    const isItemSelected = isSelected(meter.meterUuid);
+                    const isMenuOpen = Boolean(menuAnchorEl[meter.meterUuid]);
 
-                  return (
-                    <TableRow
-                      hover
-                      key={meter.meterId}
-                      selected={isItemSelected}
-                      sx={{
-                        "&:hover": { backgroundColor: theme.palette.grey[50] },
-                      }}
-                    >
-                      <TableCell padding="checkbox">
-                        <Checkbox
-                          color="primary"
-                          checked={isItemSelected}
-                          onClick={() => handleClick(meter.meterId)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">{meter.meterId}</Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.nickName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.projectName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.installLocation}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.connectedGatewayId}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.modelName}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.serialNumber}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.modbusId}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography variant="body2">
-                          {meter.createTime}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color:
-                              meter.status === "Active"
-                                ? theme.palette.success.main
-                                : meter.status === "Inactive"
-                                  ? theme.palette.error.main
-                                  : theme.palette.warning.main,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {meter.status}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Switch
-                          checked={meter.enabled}
-                          onChange={() => handleToggleEnabled(meter.meterId)}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Button
-                          variant="outlined"
-                          endIcon={<KeyboardArrowDownIcon />}
-                          aria-label="more"
-                          sx={{
-                            borderRadius: "8px",
-                            textTransform: "none",
-                            px: 2,
-                            ...(isMenuOpen && {
-                              backgroundColor: theme.palette.primary[100],
-                              borderColor: theme.palette.primary[100],
-                            }),
-                          }}
-                          onClick={(event) =>
-                            handleMenuClick(event, meter.meterId)
-                          }
-                        >
-                          Actions
-                        </Button>
-                        <Menu
-                          anchorEl={menuAnchorEl[meter.meterId]}
-                          open={isMenuOpen}
-                          onClose={() => handleMenuClose(meter.meterId)}
-                          PaperProps={{
-                            elevation: 2,
-                            sx: { borderRadius: "8px" },
-                          }}
-                        >
-                          <MenuItem
-                            sx={{ color: "text.secondary", pl: 2, pr: 5 }}
-                            onClick={() => {
-                              handleMenuClose(meter.meterId);
+                    return (
+                      <TableRow
+                        hover
+                        key={meter.meterUuid}
+                        selected={isItemSelected}
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: theme.palette.grey[50],
+                          },
+                        }}
+                      >
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            color="primary"
+                            checked={isItemSelected}
+                            onClick={() => handleClick(meter.meterUuid)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {meter.meterId}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.nickName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.projectName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.installLocation}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.connectedGatewayId}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.modelName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.serialNumber}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.modbusId}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {meter.createTime}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color:
+                                meter.status === "Online"
+                                  ? theme.palette.success.main
+                                  : theme.palette.error.main,
+                              fontWeight: 500,
                             }}
                           >
-                            Edit
-                          </MenuItem>
-                          <MenuItem
-                            sx={{ color: "text.secondary", pl: 2, pr: 5 }}
-                            onClick={() => {
-                              handleDeleteMeter(meter.meterId);
-                              handleMenuClose(meter.meterId);
+                            {meter.status}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Switch
+                            checked={meter.enabled}
+                            onChange={() =>
+                              handleToggleEnabled(meter.meterUuid)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="outlined"
+                            endIcon={<KeyboardArrowDownIcon />}
+                            aria-label="more"
+                            sx={{
+                              borderRadius: "8px",
+                              textTransform: "none",
+                              px: 2,
+                              ...(isMenuOpen && {
+                                backgroundColor: theme.palette.primary[100],
+                                borderColor: theme.palette.primary[100],
+                              }),
+                            }}
+                            onClick={(event) =>
+                              handleMenuClick(event, meter.meterUuid)
+                            }
+                          >
+                            Actions
+                          </Button>
+                          <Menu
+                            anchorEl={menuAnchorEl[meter.meterUuid]}
+                            open={isMenuOpen}
+                            onClose={() => handleMenuClose(meter.meterUuid)}
+                            PaperProps={{
+                              elevation: 2,
+                              sx: { borderRadius: "8px" },
                             }}
                           >
-                            Delete
-                          </MenuItem>
-                        </Menu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                            <MenuItem
+                              sx={{ color: "text.secondary", pl: 2, pr: 5 }}
+                              onClick={() => {
+                                handleEditMeter(meter.meterUuid);
+                                handleMenuClose(meter.meterUuid);
+                              }}
+                            >
+                              Edit
+                            </MenuItem>
+                            <MenuItem
+                              sx={{ color: "text.secondary", pl: 2, pr: 5 }}
+                              onClick={() => {
+                                handleDeleteMeter(meter.meterUuid);
+                                handleMenuClose(meter.meterUuid);
+                              }}
+                            >
+                              Delete
+                            </MenuItem>
+                          </Menu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -436,8 +513,3 @@ export default function MeterManagement() {
     </Grid>
   );
 }
-
-// Dummy handleDeleteMeter function to satisfy the reference
-const handleDeleteMeter = (meterId) => {
-  console.log(`Delete meter: ${meterId}`);
-};
