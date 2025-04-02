@@ -3,7 +3,6 @@ const sessionConfig = require("./config/session");
 const session = require("express-session");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
-const mqttRoutes = require("./routes/mqttRoutes");
 const gatewayRoutes = require("./routes/gatewayRoutes");
 const meterRoutes = require("./routes/meterRoutes");
 const dotenv = require("dotenv");
@@ -40,7 +39,6 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/gateways", gatewayRoutes);
-app.use("/api/mqtt", mqttRoutes);
 app.use("/api/meters", meterRoutes);
 
 // Basic error handling middleware
