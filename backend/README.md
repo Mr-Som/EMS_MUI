@@ -43,12 +43,14 @@ backend/
 │   │   ├── debugHandler.js
 │   │   └── statusHandler.js
 │   │
-│   ├── subscriptions/  # Topic management
-│   │   ├── subscribeData.js
-│   │   ├── subscribeDebug.js
-│   │   └── subscribeStatus.js
-│   │
-│   └── subscriptionService.js # DB validation
+│   └── subscriptions/  # Topic management
+│       ├── subscribeData.js
+│       ├── subscribeDebug.js
+│       └── subscribeStatus.js
+│
+├── middlewares/
+│       ├── gatewayValidator.js
+│       └── syncSubscriptions.js
 │
 ├── controllers/
 │   ├── dataController.js    # Internal /data logic
@@ -56,15 +58,14 @@ backend/
 │   └── statusController.js  # (Future) /status API
 │
 ├── routes/
-│   ├── internal/           # Internal APIs
-│   │   └── dataRoutes.js   # Data topic endpoints
-│   │
-│   ├── debugRoutes.js      # (Future) Dev-facing /debug
-│   └── statusRoutes.js     # (Future) /status API
-│
-├── jobs/
-│   ├── syncSubscriptions.js # 5-min sync
-│   └── messageQueue.js      # (Future) Async processing
+|   ├── internal/           # Internal service-to-service APIs
+|   │   └── dataRoutes.js
+|   │
+|   ├── external/           # Public-facing APIs
+|   │   ├── debugRoutes.js
+|   │   └── statusRoutes.js
+|   │
+|   └── index.js            # Main router aggregatorI
 │
 ├── utils/
 │   ├── validation.js       # Data validators

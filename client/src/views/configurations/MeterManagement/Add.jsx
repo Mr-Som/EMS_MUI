@@ -45,6 +45,7 @@ export default function Add() {
     thumbnailFile: null, // Holds the actual file object
     nickName: "",
     gatewayId: "",
+    macAddress: "",
     location: "",
     mdProtocol: "Modbus RTU",
     mdId: "",
@@ -81,6 +82,22 @@ export default function Add() {
     }
   };
 
+  const handleGatewayChange = (event) => {
+    const selectedGatewayId = event.target.value;
+    handleChange(event);
+
+    const selectedGateway = gateways.find(
+      (g) => g.gateway_id === selectedGatewayId
+    );
+
+    if (selectedGateway) {
+      setFormData((prev) => ({
+        ...prev,
+        macAddress: selectedGateway.mac_address || "",
+      }));
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -98,6 +115,7 @@ export default function Add() {
       thumbnailFile: null,
       nickName: "",
       gatewayId: "",
+      macAddress: "",
       location: "",
       mdProtocol: "Modbus RTU",
       mdId: "",
@@ -164,6 +182,7 @@ export default function Add() {
 
     const formDataToSend = new FormData();
     formDataToSend.append("gateway_id", formData.gatewayId);
+    formDataToSend.append("mac_address", formData.macAddress);
     formDataToSend.append("serial_number", formData.serialNumber);
     formDataToSend.append("model_name", formData.modelName);
     formDataToSend.append("nick_name", formData.nickName);
@@ -470,7 +489,7 @@ export default function Add() {
                       <Select
                         name="gatewayId"
                         value={formData.gatewayId}
-                        onChange={handleChange}
+                        onChange={handleGatewayChange}
                         label="Select Gateway"
                         required
                       >
@@ -484,6 +503,25 @@ export default function Add() {
                         ))}
                       </Select>
                     </FormControl>
+                  </Grid>
+                  <Grid item size={2}>
+                    <Typography variant="body2" gutterBottom>
+                      MAC Address
+                    </Typography>
+                  </Grid>
+                  <Grid item size={4}>
+                    <TextField
+                      size="small"
+                      fullWidth
+                      placeholder="MAC Address"
+                      name="macAddress"
+                      value={formData.macAddress || ""}
+                      onChange={handleChange}
+                      type="text"
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                    />
                   </Grid>
                   <Grid item size={2}>
                     <Typography variant="body2">CT Primary</Typography>

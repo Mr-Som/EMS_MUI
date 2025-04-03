@@ -82,6 +82,7 @@ const addMeter = async (req, res) => {
 
   const {
     gateway_id,
+    mac_address,
     serial_number,
     model_name,
     nick_name,
@@ -132,6 +133,7 @@ const addMeter = async (req, res) => {
       `
         INSERT INTO meters (
           gateway_id,
+          mac_address,
           serial_number,
           model_name,
           nick_name,
@@ -150,11 +152,12 @@ const addMeter = async (req, res) => {
           contract_kw,
           subscription_id,
           thumbnail_path
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING *
         `,
       [
         gateway_id,
+        mac_address,
         serial_number,
         model_name,
         nick_name,
