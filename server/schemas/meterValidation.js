@@ -3,6 +3,7 @@ const Joi = require("joi");
 
 const meterSchema = Joi.object({
   gateway_id: Joi.string().uuid().required(),
+  mac_address: Joi.string().max(255).required(),
   serial_number: Joi.string().max(100).required(),
   model_name: Joi.string().max(50).required(),
   nick_name: Joi.string().max(255).optional().allow(""),
